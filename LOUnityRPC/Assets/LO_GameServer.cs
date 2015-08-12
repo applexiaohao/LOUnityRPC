@@ -12,10 +12,26 @@ using UnityEngine;
 
 namespace AssemblyCSharp
 {
-	public class LO_GameServer
+	public class LO_GameServer:MonoBehaviour
 	{
-		public LO_GameServer ()
+		private LO_GameServer ()
 		{
+		}
+
+		private static GameObject s_LO_GameServer_object;
+		private static LO_GameServer s_LO_GameServer = null;
+
+		public static LO_GameServer DefaultServer
+		{
+			get{
+				if (s_LO_GameServer == null) 
+				{
+					s_LO_GameServer_object = new GameObject("DefaultServer");
+					s_LO_GameServer = s_LO_GameServer_object.AddComponent<LO_GameServer>();
+				}
+
+				return s_LO_GameServer;
+			}
 		}
 
 		/// <summary>
@@ -23,7 +39,7 @@ namespace AssemblyCSharp
 		/// </summary>
 		/// <param name="ip">Ip.</param>
 		/// <param name="port">Port.</param>
-		public static bool InitServer(string ip,int port)
+		public bool InitServer(string ip,int port)
 		{
 			//set property
 			MasterServer.ipAddress = ip;
@@ -36,7 +52,7 @@ namespace AssemblyCSharp
 		/// Starts the server.
 		/// </summary>
 		/// <returns><c>true</c>, if server was started, <c>false</c> otherwise.</returns>
-		public static bool StartServer()
+		public bool StartServer()
 		{
 			//start...
 			Network.InitializeServer(1000,25000,!Network.HavePublicAddress());
@@ -49,8 +65,8 @@ namespace AssemblyCSharp
 
 
 		public delegate void RequestRoomComplete(HostData[] list);
-		private static RequestRoomComplete complete_block = null;
-		public static RequestRoomComplete CompleteBlock{
+		private RequestRoomComplete complete_block = null;
+		public RequestRoomComplete CompleteBlock{
 			set{
 				complete_block = value;
 			}
@@ -59,11 +75,45 @@ namespace AssemblyCSharp
 			}
 		}
 
-		public static void StartRequestRoom(RequestRoomComplete block)
+		public void StartRequestRoom(RequestRoomComplete block)
 		{
-			LO_GameServer.CompleteBlock = block;
+			LO_GameServer.DefaultServer.CompleteBlock = block;
 
 			MasterServer.RequestHostList("Card");
+		}
+
+		/// <summary>
+		/// some event notification from master server
+		/// </summary>
+		/// <param name="ev">Ev.</param>
+		public void OnMasterServerEvent(MasterServerEvent ev)
+		{
+			switch (ev) {
+			case MasterServerEvent.RegistrationSucceeded:
+			{
+				break;
+			}
+				
+			case MasterServerEvent.RegistrationFailedNoServer:
+			{
+				break;
+			}
+			case MasterServerEvent.RegistrationFailedGameType:
+			{
+				break;
+			}
+			case MasterServerEvent.RegistrationFailedGameName:
+			{
+				break;
+			}
+			case MasterServerEvent.HostListReceived:
+			{
+				LO_GameServer.DefaultServer.CompleteBlock(MasterServer.PollHostList());
+				break;
+			}
+			default:
+				break;
+			}
 		}
 	}
 }
