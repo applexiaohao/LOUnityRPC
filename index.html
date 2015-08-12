@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>蓝鸥Untiy-RPC-Sample by applexiaohao</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">蓝鸥Untiy-RPC-Sample</h1>
+      <h2 class="project-tagline"></h2>
+      <a href="https://github.com/applexiaohao/LOUnityRPC" class="btn">View on GitHub</a>
+      <a href="https://github.com/applexiaohao/LOUnityRPC/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/applexiaohao/LOUnityRPC/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h1>
+<a id="蓝鸥untiy-rpc-sample" class="anchor" href="#%E8%93%9D%E9%B8%A5untiy-rpc-sample" aria-hidden="true"><span class="octicon octicon-link"></span></a>蓝鸥Untiy-RPC-Sample</h1>
+
+<h2>
+<a id="使用unityengine中的network创建的服务器类" class="anchor" href="#%E4%BD%BF%E7%94%A8unityengine%E4%B8%AD%E7%9A%84network%E5%88%9B%E5%BB%BA%E7%9A%84%E6%9C%8D%E5%8A%A1%E5%99%A8%E7%B1%BB" aria-hidden="true"><span class="octicon octicon-link"></span></a>使用UnityEngine中的NetWork创建的服务器类</h2>
+
+<h3>
+<a id="lo_gameservercs" class="anchor" href="#lo_gameservercs" aria-hidden="true"><span class="octicon octicon-link"></span></a>LO_GameServer.cs</h3>
+
+<p>** 通过该工具类能够在Unity程序中快速的创建一个游戏房间服务器，查询房间列表，及发送消息功能 **</p>
+
+<pre><code>using System;
+using UnityEngine;
+
+namespace LO_Tool
+{
+    public class LO_GameServer:MonoBehaviour
+    {
+        #region 单例化
+        private LO_GameServer ()
+        {
+        }
+
+        private static GameObject s_LO_GameServer_object;
+        private static LO_GameServer s_LO_GameServer = null;
+        private static NetworkView s_LO_NetworkView = null;
+
+        public static LO_GameServer DefaultServer
+        {
+            get{
+                if (s_LO_GameServer == null) 
+                {
+                    s_LO_GameServer_object = new GameObject("DefaultServer");
+                    s_LO_GameServer = s_LO_GameServer_object.AddComponent&lt;LO_GameServer&gt;();
+                    s_LO_NetworkView = s_LO_GameServer_object.AddComponent&lt;NetworkView&gt;();
+                }
+
+                return s_LO_GameServer;
+            }
+        }
+
+        private static NetworkView DefalutNetworkView
+        {
+            get{
+                return s_LO_NetworkView;
+            }
+        }
+        #endregion
+
+        /// &lt;summary&gt;
+        /// init server...
+        /// &lt;/summary&gt;
+        /// &lt;param name="ip"&gt;Ip.&lt;/param&gt;
+        /// &lt;param name="port"&gt;Port.&lt;/param&gt;
+        public bool InitServer(string ip,int port)
+        {
+            //set property
+            MasterServer.ipAddress = ip;
+            MasterServer.port = port;
+
+            return true;
+        }
+
+        /// &lt;summary&gt;
+        /// Starts the server.
+        /// &lt;/summary&gt;
+        /// &lt;returns&gt;&lt;c&gt;true&lt;/c&gt;, if server was started, &lt;c&gt;false&lt;/c&gt; otherwise.&lt;/returns&gt;
+        public bool StartServer()
+        {
+            //start...
+            Network.InitializeServer(1000,25000,!Network.HavePublicAddress());
+
+            //register a game
+            MasterServer.RegisterHost("Card","XiaoHao's Doudizhu");
+
+            return true;
+        }
+
+
+        public delegate void RequestRoomComplete(HostData[] list);
+        private RequestRoomComplete complete_block = null;
+        public RequestRoomComplete CompleteBlock{
+            set{
+                complete_block = value;
+            }
+            get{
+                return complete_block;
+            }
+        }
+
+        public void StartRequestRoom(RequestRoomComplete block)
+        {
+            LO_GameServer.DefaultServer.CompleteBlock = block;
+
+            MasterServer.RequestHostList("Card");
+        }
+
+
+        public delegate void JoinHostRoomDelegate(int state);
+
+        private JoinHostRoomDelegate join_delegate = null;
+        public void JoinHostRoom(HostData room,JoinHostRoomDelegate block)
+        {
+            this.join_delegate = block;
+
+            NetworkConnectionError error = Network.Connect(room.ip[0],room.port);
+
+            Debug.Log(error);
+        }
+
+        public void SendGameMessage(string message)
+        {
+            LO_GameServer.DefalutNetworkView.RPC("RemoteReceiveMessage",RPCMode.All,message);
+        }
+
+        [RPC]
+        public void RemoteReceiveMessage(string message)
+        {
+            Debug.Log(message);
+        }
+
+        #region Behaviour Actions
+
+
+        /// &lt;summary&gt;
+        /// some event notification from master server
+        /// &lt;/summary&gt;
+        /// &lt;param name="ev"&gt;Ev.&lt;/param&gt;
+        public void OnMasterServerEvent(MasterServerEvent ev)
+        {
+            switch (ev) {
+            case MasterServerEvent.RegistrationSucceeded:
+            {
+                break;
+            }
+
+            case MasterServerEvent.RegistrationFailedNoServer:
+            {
+                break;
+            }
+            case MasterServerEvent.RegistrationFailedGameType:
+            {
+                break;
+            }
+            case MasterServerEvent.RegistrationFailedGameName:
+            {
+                break;
+            }
+            case MasterServerEvent.HostListReceived:
+            {
+                LO_GameServer.DefaultServer.CompleteBlock(MasterServer.PollHostList());
+                break;
+            }
+            default:
+                break;
+            }
+
+        }
+
+
+        public void OnPlayerConnected(NetworkPlayer player)
+        {
+
+        }
+
+        public void OnConnectedToServer()
+        {
+            this.join_delegate(0);
+            Debug.Log("OnConnectedToServer");
+        }
+
+        #endregion
+    }
+}
+
+</code></pre>
+
+<p><strong>我们发现几点与通常单例类不同的地方</strong></p>
+
+<ul>
+<li>LO_GameServer类继承于MonoBehaviour脚本类</li>
+<li>静态对象s_LO_GameServer,是通过AddComponent函数实例化的,这与Unity引擎脚本类的实例化机制有关</li>
+<li>LO_GameServer单例类与其他单例类不同的地方在于，需要多创建一个静态的GameObject变量，用来存储该单例脚本对象</li>
+</ul>
+
+<p><strong>除了以上几点不同之处，在该类中同样定义了几个委托类型，用来做回调功能的处理</strong></p>
+
+<ul>
+<li>RequestRoomComplete委托类型，当请求房间列表成功后就会调用该委托类型的变量complete_block</li>
+<li>JoinHostRoomDelegate委托类型，当加入房间成功后就会调用该委托类型的变量join_delegate</li>
+</ul>
+
+<h4>
+<a id="应用举例" class="anchor" href="#%E5%BA%94%E7%94%A8%E4%B8%BE%E4%BE%8B" aria-hidden="true"><span class="octicon octicon-link"></span></a>应用举例</h4>
+
+<pre><code>    private HostData[] room_list = null;
+    private bool  isConnected = false;
+    void OnGUI()
+    {
+        if (GUILayout.Button("StartServer")) 
+        {
+            LO_GameServer.DefaultServer.StartServer();
+        }
+
+        if (GUILayout.Button("RequestRoom")) 
+        {
+            LO_GameServer.DefaultServer.StartRequestRoom((HostData[] list)=&gt;{
+                this.room_list = list;
+            });
+        }
+
+        if (this.room_list != null) {
+            GUILayout.BeginVertical();
+
+            foreach (HostData item in this.room_list) 
+            {
+                GUILayout.BeginHorizontal();
+
+                GUILayout.Label(item.ip[0],GUILayout.Width(200f),GUILayout.Height(40f));
+                GUILayout.Label(item.gameName,GUILayout.Width(200f),GUILayout.Height(40f));
+
+                string title = null;
+                Action&lt;HostData&gt; action = null;
+
+                Action&lt;HostData&gt; state_connect = (HostData data)=&gt;{
+                    LO_GameServer.DefaultServer.SendGameMessage(user.ToString());
+                };
+
+                Action&lt;HostData&gt; state_no_connect = (HostData data) =&gt; 
+                {
+                    LO_GameServer.DefaultServer.JoinHostRoom(data,(int state)=&gt;{
+
+                        isConnected = state == 0;
+
+                    });
+                };
+
+
+                if (isConnected) {
+                    title = "Send";
+                    action = state_connect;
+                }
+                else
+                {
+                    title = "Connect";
+                    action = state_no_connect;
+                }
+
+                if (GUILayout.Button(title,GUILayout.Width(60f),GUILayout.Height(40f))) 
+                {
+                    action(item);
+                }
+
+                GUILayout.EndHorizontal();
+            }
+
+
+            GUILayout.EndVertical();
+        }
+    }
+</code></pre>
+
+<hr>
+
+<h2>
+<a id="使用c语言中的systemxml与systemio库完成实体对象与xml转换的工具类" class="anchor" href="#%E4%BD%BF%E7%94%A8c%E8%AF%AD%E8%A8%80%E4%B8%AD%E7%9A%84systemxml%E4%B8%8Esystemio%E5%BA%93%E5%AE%8C%E6%88%90%E5%AE%9E%E4%BD%93%E5%AF%B9%E8%B1%A1%E4%B8%8Exml%E8%BD%AC%E6%8D%A2%E7%9A%84%E5%B7%A5%E5%85%B7%E7%B1%BB" aria-hidden="true"><span class="octicon octicon-link"></span></a>使用C#语言中的System.Xml与System.IO库完成实体对象与XML转换的工具类</h2>
+
+<h3>
+<a id="lo_xmltoolcs" class="anchor" href="#lo_xmltoolcs" aria-hidden="true"><span class="octicon octicon-link"></span></a>LO_XMLTool.cs</h3>
+
+<p><strong>通过该工具类，能够快速的将C#中的实体对象与XML进行转换,方便大家在编写代码完成进行数据交互的功能</strong></p>
+
+<pre><code>using System;
+using System.Xml;
+using System.Xml.Serialization;
+using System.IO;
+
+namespace AssemblyCSharp
+{
+    public class LO_XMLTool
+    {
+
+        #region 反序列化
+        /// &lt;summary&gt;
+        /// 反序列化
+        /// &lt;/summary&gt;
+        /// &lt;param name="type"&gt;类型&lt;/param&gt;
+        /// &lt;param name="xml"&gt;XML字符串&lt;/param&gt;
+        /// &lt;returns&gt;&lt;/returns&gt;
+        public static object Deserialize(Type type, string xml)
+        {
+            try
+            {
+                using (StringReader sr = new StringReader(xml))
+                {
+                    XmlSerializer xmldes = new XmlSerializer(type);
+                    return xmldes.Deserialize(sr);
+                }
+            }
+            catch (Exception e)
+            {
+
+                return null;
+            }
+        }
+        /// &lt;summary&gt;
+        /// 反序列化
+        /// &lt;/summary&gt;
+        /// &lt;param name="type"&gt;&lt;/param&gt;
+        /// &lt;param name="xml"&gt;&lt;/param&gt;
+        /// &lt;returns&gt;&lt;/returns&gt;
+        public static object Deserialize(Type type, Stream stream)
+        {
+            XmlSerializer xmldes = new XmlSerializer(type);
+            return xmldes.Deserialize(stream);
+        }
+        #endregion
+
+        #region 序列化
+        /// &lt;summary&gt;
+        /// 序列化
+        /// &lt;/summary&gt;
+        /// &lt;param name="type"&gt;类型&lt;/param&gt;
+        /// &lt;param name="obj"&gt;对象&lt;/param&gt;
+        /// &lt;returns&gt;&lt;/returns&gt;
+        public static string Serializer(Type type, object obj)
+        {
+            MemoryStream Stream = new MemoryStream();
+            XmlSerializer xml = new XmlSerializer(type);
+            try
+            {
+                //序列化对象
+                xml.Serialize(Stream, obj);
+            }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
+            Stream.Position = 0;
+            StreamReader sr = new StreamReader(Stream);
+            string str = sr.ReadToEnd();
+
+            sr.Dispose();
+            Stream.Dispose();
+
+            return str;
+        }
+
+        #endregion
+    }
+}
+
+</code></pre>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/applexiaohao/LOUnityRPC">蓝鸥Untiy-RPC-Sample</a> is maintained by <a href="https://github.com/applexiaohao">applexiaohao</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
