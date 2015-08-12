@@ -48,6 +48,8 @@
   <ItemGroup>
      <Compile Include="Assets\LO_GameManager.cs" />
      <Compile Include="Assets\LO_GameServer.cs" />
+     <Compile Include="Assets\LO_XMLTool.cs" />
+     <Compile Include="Assets\RX_UserInfo.cs" />
  <Reference Include="UnityEngine.UI">
  <HintPath>/Applications/Unity/Unity.app/Contents/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>

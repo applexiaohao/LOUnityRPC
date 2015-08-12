@@ -9,6 +9,7 @@
 // ------------------------------------------------------------------------------
 using System;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace AssemblyCSharp
 {
@@ -20,6 +21,7 @@ namespace AssemblyCSharp
 
 		private static GameObject s_LO_GameServer_object;
 		private static LO_GameServer s_LO_GameServer = null;
+		private static NetworkView s_LO_NetworkView = null;
 
 		public static LO_GameServer DefaultServer
 		{
@@ -28,11 +30,20 @@ namespace AssemblyCSharp
 				{
 					s_LO_GameServer_object = new GameObject("DefaultServer");
 					s_LO_GameServer = s_LO_GameServer_object.AddComponent<LO_GameServer>();
+					s_LO_NetworkView = s_LO_GameServer_object.AddComponent<NetworkView>();
 				}
 
 				return s_LO_GameServer;
 			}
 		}
+
+		private static NetworkView DefalutNetworkView
+		{
+			get{
+				return s_LO_NetworkView;
+			}
+		}
+
 
 		/// <summary>
 		/// init server...
@@ -82,6 +93,33 @@ namespace AssemblyCSharp
 			MasterServer.RequestHostList("Card");
 		}
 
+
+		public delegate void JoinHostRoomDelegate(int state);
+
+		private JoinHostRoomDelegate join_delegate = null;
+		public void JoinHostRoom(HostData room,JoinHostRoomDelegate block)
+		{
+			this.join_delegate = block;
+
+			NetworkConnectionError error = Network.Connect(room.ip[0],room.port);
+
+			Debug.Log(error);
+		}
+
+		public void SendGameMessage(string message)
+		{
+			LO_GameServer.DefalutNetworkView.RPC("RemoteReceiveMessage",RPCMode.All,message);
+		}
+
+		[RPC]
+		public void RemoteReceiveMessage(string message)
+		{
+			Debug.Log(message);
+		}
+
+		#region Behaviour Actions
+
+
 		/// <summary>
 		/// some event notification from master server
 		/// </summary>
@@ -114,7 +152,22 @@ namespace AssemblyCSharp
 			default:
 				break;
 			}
+
 		}
+
+
+		public void OnPlayerConnected(NetworkPlayer player)
+		{
+
+		}
+
+		public void OnConnectedToServer()
+		{
+			this.join_delegate(0);
+			Debug.Log("OnConnectedToServer");
+		}
+
+		#endregion
 	}
 }
 
