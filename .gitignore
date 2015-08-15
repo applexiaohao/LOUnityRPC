@@ -1,0 +1,10 @@
+#文件
+/LOUnityRPC/Assembly-CSharp-vs.csproj
+/LOUnityRPC/Assembly-CSharp.csproj
+/LOUnityRPC/LOUnityRPC-csharp.sln
+/LOUnityRPC/LOUnityRPC.sln
+/LOUnityRPC/LOUnityRPC.userprefs
+# 文件夹
+/LOUnityRPC/Library/
+/LOUnityRPC/obj/
+/LOUnityRPC/Temp/

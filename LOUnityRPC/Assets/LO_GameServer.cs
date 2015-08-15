@@ -63,13 +63,13 @@ namespace AssemblyCSharp
 		/// Starts the server.
 		/// </summary>
 		/// <returns><c>true</c>, if server was started, <c>false</c> otherwise.</returns>
-		public bool StartServer()
+		public bool StartServer(string roomname)
 		{
 			//start...
-			Network.InitializeServer(1000,25000,!Network.HavePublicAddress());
+			Network.InitializeServer(1000,25000,Network.HavePublicAddress());
 
 			//register a game
-			MasterServer.RegisterHost("Card","XiaoHao's Doudizhu");
+			MasterServer.RegisterHost("Card",roomname);
 
 			return true;
 		}
@@ -101,7 +101,7 @@ namespace AssemblyCSharp
 		{
 			this.join_delegate = block;
 
-			NetworkConnectionError error = Network.Connect(room.ip[0],room.port);
+			NetworkConnectionError error = Network.Connect(room);
 
 			Debug.Log(error);
 		}

@@ -11,7 +11,7 @@ public class LO_GameManager : MonoBehaviour {
 		user.Name = "Xiaohao";
 		user.Age = 18;
 		user.UserID = 100001;
-		LO_GameServer.DefaultServer.InitServer("192.168.1.101",23466);
+		LO_GameServer.DefaultServer.InitServer("115.28.227.1",23466);
 	}
 
 	private RX_UserInfo user = new RX_UserInfo();
@@ -22,7 +22,7 @@ public class LO_GameManager : MonoBehaviour {
 	{
 		if (GUILayout.Button("StartServer")) 
 		{
-			LO_GameServer.DefaultServer.StartServer();
+			LO_GameServer.DefaultServer.StartServer(user.Name);
 		}
 
 		if (GUILayout.Button("RequestRoom")) 
@@ -43,6 +43,7 @@ public class LO_GameManager : MonoBehaviour {
 				GUILayout.Label(item.gameName,GUILayout.Width(200f),GUILayout.Height(40f));
 
 				string title = null;
+				//Aciton
 				Action<HostData> action = null;
 
 				Action<HostData> state_connect = (HostData data)=>{
